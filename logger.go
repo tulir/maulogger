@@ -34,11 +34,14 @@ var (
 	Fatal = Level{Name: "FATAL", Color: 5, Severity: 9001}
 )
 
+// PrintDebug tells if debug messages (severity lower than 10) should be printed.
+var PrintDebug = false
+
 // FileTimeformat is the time format used in log file names.
 var FileTimeformat = "2006-01-02"
 
 // Fileformat is the format used for log file names.
-var Fileformat = "logs/%[1]s-%[2]d.log"
+var Fileformat = "%[1]s-%[2]d.log"
 
 // Timeformat is the time format used in logging.
 var Timeformat = "15:04:05 02.01.2006"
@@ -46,7 +49,8 @@ var Timeformat = "15:04:05 02.01.2006"
 var writer *bufio.Writer
 var lines int
 
-func init() {
+// Init ...
+func Init() {
 	now := time.Now().Format(FileTimeformat)
 	i := 1
 	for ; ; i++ {
@@ -146,12 +150,11 @@ func logln(level Level, message string) {
 		lines = 0
 		writer.Flush()
 	}
-
 	if level.Severity >= Error.Severity {
 		os.Stderr.Write(level.GetColor())
 		os.Stderr.Write(msg)
 		os.Stderr.Write([]byte("\x1b[0m"))
-	} else {
+	} else if level.Severity >= Info.Severity || PrintDebug {
 		os.Stdout.Write(level.GetColor())
 		os.Stdout.Write(msg)
 		os.Stdout.Write([]byte("\x1b[0m"))
