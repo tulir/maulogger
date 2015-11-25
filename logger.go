@@ -21,6 +21,8 @@ func (lvl Level) ToString() string {
 		return "ERROR"
 	case Fatal:
 		return "FATAL"
+	case Debug:
+		return "DEBUG"
 	default:
 		return "GENERIC"
 	}
@@ -35,12 +37,16 @@ func (lvl Level) GetColor() []byte {
 		return []byte("\x1b[31m")
 	case Fatal:
 		return []byte("\x1b[35m")
+	case Debug:
+		return []byte("\x1b[36m")
 	default:
 		return []byte{}
 	}
 }
 
 const (
+	// Debug is the level for debug messages.
+	Debug Level = iota
 	// Info is the level for basic log messages.
 	Info Level = iota
 	// Warn is the level saying that something went wrong, but the program will continue operating mostly normally.
@@ -51,14 +57,14 @@ const (
 	Fatal Level = iota
 )
 
-var (
-	// FileTimeformat is the time format used in log file names.
-	FileTimeformat = "2006-01-02"
-	// Fileformat is the format used for log file names.
-	Fileformat = "logs/%[1]s-%[2]d.log"
-	// Timeformat is the time format used in logging.
-	Timeformat = "15:04:05 02.01.2006"
-)
+// FileTimeformat is the time format used in log file names.
+var FileTimeformat = "2006-01-02"
+
+// Fileformat is the format used for log file names.
+var Fileformat = "logs/%[1]s-%[2]d.log"
+
+// Timeformat is the time format used in logging.
+var Timeformat = "15:04:05 02.01.2006"
 
 var writer *bufio.Writer
 var lines int
@@ -81,62 +87,72 @@ func init() {
 	writer = bufio.NewWriter(file)
 }
 
-// Printf ...
+// Debugf formats and logs a debug message.
+func Debugf(message string, args ...interface{}) {
+	logln(Debug, fmt.Sprintf(message, args...))
+}
+
+// Printf formats and logs a string in the Info log level.
 func Printf(message string, args ...interface{}) {
 	Infof(message, args...)
 }
 
-// Println ...
-func Println(args ...interface{}) {
-	Infoln(args...)
-}
-
-// Infof ...
+// Infof formats and logs a string in the Info log level.
 func Infof(message string, args ...interface{}) {
 	logln(Info, fmt.Sprintf(message, args...))
 }
 
-// Warnf ...
+// Warnf formats and logs a string in the Warn log level.
 func Warnf(message string, args ...interface{}) {
 	logln(Warn, fmt.Sprintf(message, args...))
 }
 
-// Errorf ...
+// Errorf formats and logs a string in the Error log level.
 func Errorf(message string, args ...interface{}) {
 	logln(Error, fmt.Sprintf(message, args...))
 }
 
-// Fatalf ...
+// Fatalf formats and logs a string in the Fatal log level.
 func Fatalf(message string, args ...interface{}) {
 	logln(Fatal, fmt.Sprintf(message, args...))
 }
 
-// Logf formats and logs a message.
+// Logf formats and logs a message in the given log level.
 func Logf(level Level, message string, args ...interface{}) {
 	logln(level, fmt.Sprintf(message, args...))
 }
 
-// Infoln ...
+// Debugln logs a debug message.
+func Debugln(message string, args ...interface{}) {
+	logln(Debug, fmt.Sprintf(message, args...))
+}
+
+// Println logs a string in the Info log level.
+func Println(args ...interface{}) {
+	Infoln(args...)
+}
+
+// Infoln logs a string in the Info log level.
 func Infoln(args ...interface{}) {
 	logln(Info, fmt.Sprintln(args...))
 }
 
-// Warnln ...
+// Warnln logs a string in the Warn log level.
 func Warnln(args ...interface{}) {
 	logln(Warn, fmt.Sprintln(args...))
 }
 
-// Errorln ...
+// Errorln logs a string in the Error log level.
 func Errorln(args ...interface{}) {
 	logln(Error, fmt.Sprintln(args...))
 }
 
-// Fatalln ...
+// Fatalln logs a string in the Fatal log level.
 func Fatalln(args ...interface{}) {
 	logln(Fatal, fmt.Sprintln(args...))
 }
 
-// Logln logs a message.
+// Logln logs a message in the given log level.
 func Logln(level Level, args ...interface{}) {
 	logln(level, fmt.Sprintln(args...))
 }
