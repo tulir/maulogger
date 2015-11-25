@@ -8,53 +8,30 @@ import (
 )
 
 // Level is the severity level of a log entry.
-type Level int
-
-// ToString converts a level to a string
-func (lvl Level) ToString() string {
-	switch lvl {
-	case Info:
-		return "INFO"
-	case Warn:
-		return "WARN"
-	case Error:
-		return "ERROR"
-	case Fatal:
-		return "FATAL"
-	case Debug:
-		return "DEBUG"
-	default:
-		return "GENERIC"
-	}
+type Level struct {
+	Name            string
+	Severity, Color int
 }
 
 // GetColor gets the ANSI escape color code for the log level.
 func (lvl Level) GetColor() []byte {
-	switch lvl {
-	case Warn:
-		return []byte("\x1b[33m")
-	case Error:
-		return []byte("\x1b[31m")
-	case Fatal:
-		return []byte("\x1b[35m")
-	case Debug:
-		return []byte("\x1b[36m")
-	default:
+	if lvl.Color == -1 {
 		return []byte{}
 	}
+	return []byte(fmt.Sprintf("\x1b[3%dm", lvl.Color))
 }
 
-const (
+var (
 	// Debug is the level for debug messages.
-	Debug Level = iota
+	Debug = Level{Name: "DEBUG", Color: 6, Severity: 0}
 	// Info is the level for basic log messages.
-	Info Level = iota
+	Info = Level{Name: "INFO", Color: -1, Severity: 10}
 	// Warn is the level saying that something went wrong, but the program will continue operating mostly normally.
-	Warn Level = iota
+	Warn = Level{Name: "WARN", Color: 3, Severity: 50}
 	// Error is the level saying that something went wrong and the program may not operate as expected, but will still continue.
-	Error Level = iota
+	Error = Level{Name: "ERROR", Color: 1, Severity: 100}
 	// Fatal is the level saying that something went wrong and the program will not operate normally.
-	Fatal Level = iota
+	Fatal = Level{Name: "FATAL", Color: 5, Severity: 9001}
 )
 
 // FileTimeformat is the time format used in log file names.
@@ -158,7 +135,7 @@ func Logln(level Level, args ...interface{}) {
 }
 
 func logln(level Level, message string) {
-	msg := []byte(fmt.Sprintf("[%[1]s] [%[2]s] %[3]s\n", time.Now().Format(Timeformat), level.ToString(), message))
+	msg := []byte(fmt.Sprintf("[%[1]s] [%[2]s] %[3]s\n", time.Now().Format(Timeformat), level.Name, message))
 
 	_, err := writer.Write(msg)
 	if err != nil {
@@ -170,7 +147,7 @@ func logln(level Level, message string) {
 		writer.Flush()
 	}
 
-	if level >= Error {
+	if level.Severity >= Error.Severity {
 		os.Stderr.Write(level.GetColor())
 		os.Stderr.Write(msg)
 		os.Stderr.Write([]byte("\x1b[0m"))
