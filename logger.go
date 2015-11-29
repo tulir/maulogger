@@ -41,7 +41,7 @@ var PrintDebug = false
 var FileTimeformat = "2006-01-02"
 
 // Fileformat is the format used for log file names.
-var Fileformat = "%[1]s-%[2]d.log"
+var Fileformat = "%[1]s-%02[2]d.log"
 
 // Timeformat is the time format used in logging.
 var Timeformat = "15:04:05 02.01.2006"
