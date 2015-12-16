@@ -40,6 +40,9 @@ var PrintDebug = false
 // FileTimeformat is the time format used in log file names.
 var FileTimeformat = "2006-01-02"
 
+// FileformatArgs is an undocumented integer.
+var FileformatArgs = 3
+
 // Fileformat is the format used for log file names.
 var Fileformat = func(now string, i int) string { return fmt.Sprintf("%[1]s-%02[2]d.log", now, i) }
 
