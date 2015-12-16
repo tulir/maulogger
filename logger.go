@@ -41,7 +41,7 @@ var PrintDebug = false
 var FileTimeformat = "2006-01-02"
 
 // Fileformat is the format used for log file names.
-var Fileformat = "%[1]s-%02[2]d.log"
+var Fileformat = func(now string, i int) string { return fmt.Sprintf("%[1]s-%02[2]d.log", now, i) }
 
 // Timeformat is the time format used in logging.
 var Timeformat = "15:04:05 02.01.2006"
@@ -54,11 +54,15 @@ func Init() {
 	now := time.Now().Format(FileTimeformat)
 	i := 1
 	for ; ; i++ {
-		if _, err := os.Stat(fmt.Sprintf(Fileformat, now, i)); os.IsNotExist(err) {
+		if _, err := os.Stat(Fileformat(now, i)); os.IsNotExist(err) {
+			break
+		}
+		if i == 99 {
+			i = 1
 			break
 		}
 	}
-	file, err := os.OpenFile(fmt.Sprintf(Fileformat, now, i), os.O_WRONLY|os.O_CREATE|os.O_EXCL|os.O_TRUNC|os.O_APPEND, 0700)
+	file, err := os.OpenFile(Fileformat(now, i), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0700)
 	if err != nil {
 		panic(err)
 	}
