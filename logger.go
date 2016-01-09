@@ -54,6 +54,7 @@ var lines int
 
 // Init initializes MauLogger.
 func Init() {
+	// Find the next file name.
 	now := time.Now().Format(FileTimeformat)
 	i := 1
 	for ; ; i++ {
@@ -65,6 +66,7 @@ func Init() {
 			break
 		}
 	}
+	// Open the file
 	file, err := os.OpenFile(Fileformat(now, i), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0700)
 	if err != nil {
 		panic(err)
@@ -72,6 +74,7 @@ func Init() {
 	if file == nil {
 		panic(os.ErrInvalid)
 	}
+	// Create a writer
 	writer = bufio.NewWriter(file)
 }
 
