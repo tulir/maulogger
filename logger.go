@@ -15,23 +15,31 @@ type Level struct {
 
 // GetColor gets the ANSI escape color code for the log level.
 func (lvl Level) GetColor() []byte {
-	if lvl.Color == -1 {
-		return []byte{}
+	if lvl.Color < 0 {
+		return []byte("")
 	}
-	return []byte(fmt.Sprintf("\x1b[3%dm", lvl.Color))
+	return []byte(fmt.Sprintf("\x1b[%dm", lvl.Color))
+}
+
+// GetReset gets the ANSI escape reset code.
+func (lvl Level) GetReset() []byte {
+	if lvl.Color < 0 {
+		return []byte("")
+	}
+	return []byte("\x1b[0m")
 }
 
 var (
 	// Debug is the level for debug messages.
-	Debug = Level{Name: "DEBUG", Color: 6, Severity: 0}
+	Debug = Level{Name: "DEBUG", Color: 36, Severity: 0}
 	// Info is the level for basic log messages.
 	Info = Level{Name: "INFO", Color: -1, Severity: 10}
 	// Warn is the level saying that something went wrong, but the program will continue operating mostly normally.
-	Warn = Level{Name: "WARN", Color: 3, Severity: 50}
+	Warn = Level{Name: "WARN", Color: 33, Severity: 50}
 	// Error is the level saying that something went wrong and the program may not operate as expected, but will still continue.
-	Error = Level{Name: "ERROR", Color: 1, Severity: 100}
+	Error = Level{Name: "ERROR", Color: 31, Severity: 100}
 	// Fatal is the level saying that something went wrong and the program will not operate normally.
-	Fatal = Level{Name: "FATAL", Color: 5, Severity: 9001}
+	Fatal = Level{Name: "FATAL", Color: 35, Severity: 9001}
 )
 
 // PrintDebug tells if debug messages (severity lower than 10) should be printed.
@@ -167,11 +175,11 @@ func logln(level Level, message string) {
 	if level.Severity >= Error.Severity {
 		os.Stderr.Write(level.GetColor())
 		os.Stderr.Write(msg)
-		os.Stderr.Write([]byte("\x1b[0m"))
+		os.Stderr.Write(level.GetReset())
 	} else if level.Severity >= Info.Severity || PrintDebug {
 		os.Stdout.Write(level.GetColor())
 		os.Stdout.Write(msg)
-		os.Stdout.Write([]byte("\x1b[0m"))
+		os.Stderr.Write(level.GetReset())
 	}
 }
 
