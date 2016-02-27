@@ -60,6 +60,11 @@ var Timeformat = "15:04:05 02.01.2006"
 var writer *bufio.Writer
 var lines int
 
+// InitWithWriter initializes MauLogger with the given writer.
+func InitWithWriter(w *bufio.Writer) {
+	writer = w
+}
+
 // Init initializes MauLogger.
 func Init() {
 	// Find the next file name.
@@ -160,17 +165,20 @@ func logln(level Level, message string) {
 	// Prefix the message with the timestamp and log level.
 	msg := []byte(fmt.Sprintf("[%[1]s] [%[2]s] %[3]s\n", time.Now().Format(Timeformat), level.Name, message))
 
-	// Write it to the log file.
-	_, err := writer.Write(msg)
-	if err != nil {
-		panic(err)
+	if writer != nil {
+		// Write it to the log file.
+		_, err := writer.Write(msg)
+		if err != nil {
+			panic(err)
+		}
+		lines++
+		// Flush the file if needed
+		if lines == 5 {
+			lines = 0
+			writer.Flush()
+		}
 	}
-	lines++
-	// Flush the file if needed
-	if lines == 5 {
-		lines = 0
-		writer.Flush()
-	}
+
 	// Print to stdout using correct color
 	if level.Severity >= Error.Severity {
 		os.Stderr.Write(level.GetColor())
@@ -185,5 +193,7 @@ func logln(level Level, message string) {
 
 // Shutdown cleans up the logger.
 func Shutdown() {
-	writer.Flush()
+	if writer != nil {
+		writer.Flush()
+	}
 }
