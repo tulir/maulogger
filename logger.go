@@ -45,6 +45,9 @@ var (
 // PrintLevel tells the first severity level at which messages should be printed to stdout
 var PrintLevel = 10
 
+// PrintDebug means PrintLevel = 0, kept for backwards compatibility
+var PrintDebug = false
+
 // FileTimeformat is the time format used in log file names.
 var FileTimeformat = "2006-01-02"
 
@@ -180,14 +183,16 @@ func logln(level Level, message string) {
 	}
 
 	// Print to stdout using correct color
-	if level.Severity >= Error.Severity {
-		os.Stderr.Write(level.GetColor())
-		os.Stderr.Write(msg)
-		os.Stderr.Write(level.GetReset())
-	} else if level.Severity >= PrintLevel {
-		os.Stdout.Write(level.GetColor())
-		os.Stdout.Write(msg)
-		os.Stderr.Write(level.GetReset())
+	if level.Severity >= PrintLevel || PrintDebug {
+		if level.Severity >= Error.Severity {
+			os.Stderr.Write(level.GetColor())
+			os.Stderr.Write(msg)
+			os.Stderr.Write(level.GetReset())
+		} else {
+			os.Stdout.Write(level.GetColor())
+			os.Stdout.Write(msg)
+			os.Stdout.Write(level.GetReset())
+		}
 	}
 }
 
