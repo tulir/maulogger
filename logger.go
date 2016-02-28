@@ -42,8 +42,8 @@ var (
 	Fatal = Level{Name: "FATAL", Color: 35, Severity: 9001}
 )
 
-// PrintDebug tells if debug messages (severity lower than 10) should be printed.
-var PrintDebug = false
+// PrintLevel tells the first severity level at which messages should be printed to stdout
+var PrintLevel = 10
 
 // FileTimeformat is the time format used in log file names.
 var FileTimeformat = "2006-01-02"
@@ -184,7 +184,7 @@ func logln(level Level, message string) {
 		os.Stderr.Write(level.GetColor())
 		os.Stderr.Write(msg)
 		os.Stderr.Write(level.GetReset())
-	} else if level.Severity >= Info.Severity || PrintDebug {
+	} else if level.Severity >= PrintLevel {
 		os.Stdout.Write(level.GetColor())
 		os.Stdout.Write(msg)
 		os.Stderr.Write(level.GetReset())
