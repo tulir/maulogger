@@ -130,8 +130,8 @@ func Logf(level Level, message string, args ...interface{}) {
 }
 
 // Debugln logs a debug message.
-func Debugln(message string, args ...interface{}) {
-	log(Debug, fmt.Sprintf(message, args...))
+func Debugln(args ...interface{}) {
+	log(Debug, fmt.Sprintln(args...))
 }
 
 // Println logs a string in the Info log level.
