@@ -131,7 +131,7 @@ func Logf(level Level, message string, args ...interface{}) {
 
 // Debugln logs a debug message.
 func Debugln(message string, args ...interface{}) {
-	logln(Debug, fmt.Sprintf(message, args...))
+	log(Debug, fmt.Sprintf(message, args...))
 }
 
 // Println logs a string in the Info log level.
@@ -141,32 +141,36 @@ func Println(args ...interface{}) {
 
 // Infoln logs a string in the Info log level.
 func Infoln(args ...interface{}) {
-	logln(Info, fmt.Sprintln(args...))
+	log(Info, fmt.Sprintln(args...))
 }
 
 // Warnln logs a string in the Warn log level.
 func Warnln(args ...interface{}) {
-	logln(Warn, fmt.Sprintln(args...))
+	log(Warn, fmt.Sprintln(args...))
 }
 
 // Errorln logs a string in the Error log level.
 func Errorln(args ...interface{}) {
-	logln(Error, fmt.Sprintln(args...))
+	log(Error, fmt.Sprintln(args...))
 }
 
 // Fatalln logs a string in the Fatal log level.
 func Fatalln(args ...interface{}) {
-	logln(Fatal, fmt.Sprintln(args...))
+	log(Fatal, fmt.Sprintln(args...))
 }
 
 // Logln logs a message in the given log level.
 func Logln(level Level, args ...interface{}) {
-	logln(level, fmt.Sprintln(args...))
+	log(level, fmt.Sprintln(args...))
 }
 
 func logln(level Level, message string) {
+	log(level, fmt.Sprintln(message))
+}
+
+func log(level Level, message string) {
 	// Prefix the message with the timestamp and log level.
-	msg := []byte(fmt.Sprintf("[%[1]s] [%[2]s] %[3]s\n", time.Now().Format(Timeformat), level.Name, message))
+	msg := []byte(fmt.Sprintf("[%[1]s] [%[2]s] %[3]s", time.Now().Format(Timeformat), level.Name, message))
 
 	if writer != nil {
 		// Write it to the log file.
