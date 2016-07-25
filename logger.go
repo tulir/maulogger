@@ -13,6 +13,17 @@ type Level struct {
 	Severity, Color int
 }
 
+// LogWriter writes to the log with an optional prefix
+type LogWriter struct {
+	Level  Level
+	Prefix string
+}
+
+func (lw LogWriter) Write(p []byte) (n int, err error) {
+	log(lw.Level, fmt.Sprint(lw.Prefix, string(p)))
+	return len(p), nil
+}
+
 // GetColor gets the ANSI escape color code for the log level.
 func (lvl Level) GetColor() []byte {
 	if lvl.Color < 0 {
