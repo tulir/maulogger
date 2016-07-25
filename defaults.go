@@ -39,6 +39,11 @@ func Close() {
 	DefaultLogger.Close()
 }
 
+// CreateSublogger creates a Sublogger
+func CreateSublogger(module string, DefaultLevel Level) *Sublogger {
+	return DefaultLogger.CreateSublogger(module, DefaultLevel)
+}
+
 // Raw formats the given parts with fmt.Sprint and log them with the Raw level
 func Raw(level Level, module, message string) {
 	DefaultLogger.Raw(level, module, message)
