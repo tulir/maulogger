@@ -71,7 +71,7 @@ func Create() *Logger {
 		FileTimeFormat:     "2006-01-02",
 		FileFormat:         func(now string, i int) string { return fmt.Sprintf("%[1]s-%02[2]d.log", now, i) },
 		TimeFormat:         "15:04:05 02.01.2006",
-		FileMode:           0700,
+		FileMode:           0600,
 		FlushLineThreshold: 5,
 		lines:              0,
 	}
