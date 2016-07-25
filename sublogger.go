@@ -29,8 +29,8 @@ type Sublogger struct {
 }
 
 // CreateSublogger creates a Sublogger
-func (log *Logger) CreateSublogger(module string, DefaultLevel Level) Sublogger {
-	return Sublogger{
+func (log *Logger) CreateSublogger(module string, DefaultLevel Level) *Sublogger {
+	return &Sublogger{
 		Parent:       log,
 		Module:       module,
 		DefaultLevel: DefaultLevel,

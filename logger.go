@@ -35,7 +35,7 @@ type Logger struct {
 	FileFormat         LoggerFileFormat
 	TimeFormat         string
 	FileMode           os.FileMode
-	DefaultSub         Sublogger
+	DefaultSub         *Sublogger
 
 	writer *bufio.Writer
 	lines  int
