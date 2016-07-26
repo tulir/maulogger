@@ -126,12 +126,12 @@ func (log *Logger) Raw(level Level, module, message string) {
 		_, err := log.writer.Write(msg)
 		if err != nil {
 			fmt.Println("Failed to write to log file:", err)
-			return
-		}
-		log.lines++
-		if log.lines == log.FlushLineThreshold {
-			log.lines = 0
-			log.writer.Flush()
+		} else {
+			log.lines++
+			if log.lines == log.FlushLineThreshold {
+				log.lines = 0
+				log.writer.Flush()
+			}
 		}
 	}
 
