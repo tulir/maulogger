@@ -37,6 +37,21 @@ func (log *Logger) CreateSublogger(module string, DefaultLevel Level) *Sublogger
 	}
 }
 
+// SetModule changes the module name of this Sublogger
+func (log *Sublogger) SetModule(mod string) {
+	log.Module = mod
+}
+
+// SetDefaultLevel changes the default logging level of this Sublogger
+func (log *Sublogger) SetDefaultLevel(lvl Level) {
+	log.DefaultLevel = lvl
+}
+
+// SetParent changes the parent of this Sublogger
+func (log *Sublogger) SetParent(parent *Logger) {
+	log.Parent = parent
+}
+
 //Write ...
 func (log *Sublogger) Write(p []byte) (n int, err error) {
 	log.Parent.Raw(log.DefaultLevel, log.Module, string(p))
