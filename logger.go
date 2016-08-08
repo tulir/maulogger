@@ -37,8 +37,9 @@ type Logger struct {
 	FileMode           os.FileMode
 	DefaultSub         *Sublogger
 
-	writer *bufio.Writer
-	lines  int
+	writer        *bufio.Writer
+	lines         int
+	prefixPrinted bool
 }
 
 // GeneralLogger contains advanced logging functions and also implements io.Writer
@@ -116,11 +117,15 @@ func (log *Logger) Close() {
 // Raw formats the given parts with fmt.Sprint and log them with the Raw level
 func (log *Logger) Raw(level Level, module, message string) {
 	var msg []byte
-	if len(module) == 0 {
+	if log.prefixPrinted {
+		msg = []byte(message)
+	} else if len(module) == 0 {
 		msg = []byte(fmt.Sprintf("[%s] [%s] %s", time.Now().Format(log.TimeFormat), level.Name, message))
 	} else {
 		msg = []byte(fmt.Sprintf("[%s] [%s/%s] %s", time.Now().Format(log.TimeFormat), module, level.Name, message))
 	}
+
+	log.prefixPrinted = message[len(message)-1] != '\n'
 
 	if log.writer != nil {
 		_, err := log.writer.Write(msg)
