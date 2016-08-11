@@ -18,7 +18,6 @@
 package maulogger
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 	"time"
@@ -37,7 +36,7 @@ type Logger struct {
 	FileMode           os.FileMode
 	DefaultSub         *Sublogger
 
-	writer        *bufio.Writer
+	writer        *os.File
 	lines         int
 	prefixPrinted bool
 }
@@ -81,7 +80,7 @@ func Create() *Logger {
 }
 
 // SetWriter formats the given parts with fmt.Sprint and log them with the SetWriter level
-func (log *Logger) SetWriter(w *bufio.Writer) {
+func (log *Logger) SetWriter(w *os.File) {
 	log.writer = w
 }
 
@@ -97,57 +96,50 @@ func (log *Logger) OpenFile() error {
 			break
 		}
 	}
-	file, err := os.OpenFile(log.FileFormat(now, i), os.O_WRONLY|os.O_CREATE|os.O_APPEND, log.FileMode)
+	var err error
+	log.writer, err = os.OpenFile(log.FileFormat(now, i), os.O_WRONLY|os.O_CREATE|os.O_APPEND, log.FileMode)
 	if err != nil {
 		return err
-	} else if file == nil {
+	} else if log.writer == nil {
 		return os.ErrInvalid
 	}
-	log.writer = bufio.NewWriter(file)
 	return nil
 }
 
 // Close formats the given parts with fmt.Sprint and log them with the Close level
 func (log *Logger) Close() {
 	if log.writer != nil {
-		log.writer.Flush()
+		log.writer.Close()
 	}
 }
 
 // Raw formats the given parts with fmt.Sprint and log them with the Raw level
 func (log *Logger) Raw(level Level, module, message string) {
-	var msg []byte
-	if log.prefixPrinted {
-		msg = []byte(message)
-	} else if len(module) == 0 {
-		msg = []byte(fmt.Sprintf("[%s] [%s] %s", time.Now().Format(log.TimeFormat), level.Name, message))
-	} else {
-		msg = []byte(fmt.Sprintf("[%s] [%s/%s] %s", time.Now().Format(log.TimeFormat), module, level.Name, message))
+	if !log.prefixPrinted {
+		if len(module) == 0 {
+			message = fmt.Sprintf("[%s] [%s] %s", time.Now().Format(log.TimeFormat), level.Name, message)
+		} else {
+			message = fmt.Sprintf("[%s] [%s/%s] %s", time.Now().Format(log.TimeFormat), module, level.Name, message)
+		}
 	}
 
 	log.prefixPrinted = message[len(message)-1] != '\n'
 
 	if log.writer != nil {
-		_, err := log.writer.Write(msg)
+		_, err := log.writer.WriteString(message)
 		if err != nil {
 			fmt.Println("Failed to write to log file:", err)
-		} else {
-			log.lines++
-			if log.lines == log.FlushLineThreshold {
-				log.lines = 0
-				log.writer.Flush()
-			}
 		}
 	}
 
 	if level.Severity >= log.PrintLevel {
 		if level.Severity >= LevelError.Severity {
 			os.Stderr.Write(level.GetColor())
-			os.Stderr.Write(msg)
+			os.Stderr.WriteString(message)
 			os.Stderr.Write(level.GetReset())
 		} else {
 			os.Stdout.Write(level.GetColor())
-			os.Stdout.Write(msg)
+			os.Stdout.WriteString(message)
 			os.Stdout.Write(level.GetReset())
 		}
 	}

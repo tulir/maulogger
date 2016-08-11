@@ -18,14 +18,14 @@
 package maulogger
 
 import (
-	"bufio"
+	"os"
 )
 
 // DefaultLogger ...
 var DefaultLogger = Create()
 
 // SetWriter formats the given parts with fmt.Sprint and log them with the SetWriter level
-func SetWriter(w *bufio.Writer) {
+func SetWriter(w *os.File) {
 	DefaultLogger.SetWriter(w)
 }
 
