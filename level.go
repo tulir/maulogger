@@ -28,9 +28,9 @@ type Level struct {
 
 var (
 	// LevelDebug is the level for debug messages.
-	LevelDebug = Level{Name: "DEBUG", Color: 36, Severity: 0}
+	LevelDebug = Level{Name: "DEBUG", Color: -1, Severity: 0}
 	// LevelInfo is the level for basic log messages.
-	LevelInfo = Level{Name: "INFO", Color: -1, Severity: 10}
+	LevelInfo = Level{Name: "INFO", Color: 36, Severity: 10}
 	// LevelWarn is the level saying that something went wrong, but the program will continue operating mostly normally.
 	LevelWarn = Level{Name: "WARN", Color: 33, Severity: 50}
 	// LevelError is the level saying that something went wrong and the program may not operate as expected, but will still continue.
