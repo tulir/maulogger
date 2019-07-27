@@ -42,6 +42,7 @@ type BasicLogger struct {
 // Logger contains advanced logging functions and also implements io.Writer
 type Logger interface {
 	Sub(module string) Logger
+	WithDefaultLevel(level Level) Logger
 	GetParent() Logger
 
 	Write(p []byte) (n int, err error)

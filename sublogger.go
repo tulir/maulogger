@@ -37,6 +37,11 @@ func (log *BasicLogger) Sub(module string) Logger {
 	}
 }
 
+// WithDefaultLevel creates a Sublogger with the same Module but different DefaultLevel
+func (log *BasicLogger) WithDefaultLevel(lvl Level) Logger {
+	return log.DefaultSub.WithDefaultLevel(lvl)
+}
+
 func (log *Sublogger) GetParent() Logger {
 	return log.parent
 }
@@ -48,6 +53,16 @@ func (log *Sublogger) Sub(module string) Logger {
 		parent:       log,
 		Module:       fmt.Sprintf("%s/%s", log.Module, module),
 		DefaultLevel: log.DefaultLevel,
+	}
+}
+
+// WithDefaultLevel creates a Sublogger with the same Module but different DefaultLevel
+func (log *Sublogger) WithDefaultLevel(lvl Level) Logger {
+	return &Sublogger{
+		topLevel:     log.topLevel,
+		parent:       log.parent,
+		Module:       log.Module,
+		DefaultLevel: lvl,
 	}
 }
 
