@@ -40,17 +40,17 @@ var (
 )
 
 // GetColor gets the ANSI escape color code for the log level.
-func (lvl Level) GetColor() []byte {
+func (lvl Level) GetColor() string {
 	if lvl.Color < 0 {
-		return []byte("")
+		return ""
 	}
-	return []byte(fmt.Sprintf("\x1b[%dm", lvl.Color))
+	return fmt.Sprintf("\x1b[%dm", lvl.Color)
 }
 
 // GetReset gets the ANSI escape reset code.
-func (lvl Level) GetReset() []byte {
+func (lvl Level) GetReset() string {
 	if lvl.Color < 0 {
-		return []byte("")
+		return ""
 	}
-	return []byte("\x1b[0m")
+	return "\x1b[0m"
 }

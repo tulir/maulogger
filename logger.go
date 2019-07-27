@@ -120,10 +120,11 @@ func (log *BasicLogger) OpenFile() error {
 }
 
 // Close formats the given parts with fmt.Sprint and logs the result with the Close level
-func (log *BasicLogger) Close() {
+func (log *BasicLogger) Close() error {
 	if log.writer != nil {
-		log.writer.Close()
+		return log.writer.Close()
 	}
+	return nil
 }
 
 // Raw formats the given parts with fmt.Sprint and logs the result with the Raw level
@@ -147,13 +148,13 @@ func (log *BasicLogger) Raw(level Level, module, message string) {
 
 	if level.Severity >= log.PrintLevel {
 		if level.Severity >= LevelError.Severity {
-			os.Stderr.Write(level.GetColor())
-			os.Stderr.WriteString(message)
-			os.Stderr.Write(level.GetReset())
+			_, _ = os.Stderr.WriteString(level.GetColor())
+			_, _ = os.Stderr.WriteString(message)
+			_, _ = os.Stderr.WriteString(level.GetReset())
 		} else {
-			os.Stdout.Write(level.GetColor())
-			os.Stdout.WriteString(message)
-			os.Stdout.Write(level.GetReset())
+			_, _ = os.Stdout.WriteString(level.GetColor())
+			_, _ = os.Stdout.WriteString(message)
+			_, _ = os.Stdout.WriteString(level.GetReset())
 		}
 	}
 }

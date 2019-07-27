@@ -34,8 +34,8 @@ func OpenFile() error {
 }
 
 // Close formats the given parts with fmt.Sprint and logs the result with the Close level
-func Close() {
-	DefaultLogger.Close()
+func Close() error {
+	return DefaultLogger.Close()
 }
 
 // Sub creates a Sublogger
@@ -83,6 +83,11 @@ func Debugf(message string, args ...interface{}) {
 	DefaultLogger.DefaultSub.Debugf(message, args...)
 }
 
+// Debugfln formats the given message and args with fmt.Sprintf, appends a newline and logs the result with the Debug level
+func Debugfln(message string, args ...interface{}) {
+	DefaultLogger.DefaultSub.Debugfln(message, args...)
+}
+
 // Info formats the given parts with fmt.Sprint and logs the result with the Info level
 func Info(parts ...interface{}) {
 	DefaultLogger.DefaultSub.Info(parts...)
@@ -96,6 +101,11 @@ func Infoln(parts ...interface{}) {
 // Infof formats the given message and args with fmt.Sprintf and logs the result with the Info level
 func Infof(message string, args ...interface{}) {
 	DefaultLogger.DefaultSub.Infof(message, args...)
+}
+
+// Infofln formats the given message and args with fmt.Sprintf, appends a newline and logs the result with the Info level
+func Infofln(message string, args ...interface{}) {
+	DefaultLogger.DefaultSub.Infofln(message, args...)
 }
 
 // Warn formats the given parts with fmt.Sprint and logs the result with the Warn level
@@ -113,6 +123,11 @@ func Warnf(message string, args ...interface{}) {
 	DefaultLogger.DefaultSub.Warnf(message, args...)
 }
 
+// Warnfln formats the given message and args with fmt.Sprintf, appends a newline and logs the result with the Warn level
+func Warnfln(message string, args ...interface{}) {
+	DefaultLogger.DefaultSub.Warnfln(message, args...)
+}
+
 // Error formats the given parts with fmt.Sprint and logs the result with the Error level
 func Error(parts ...interface{}) {
 	DefaultLogger.DefaultSub.Error(parts...)
@@ -128,6 +143,11 @@ func Errorf(message string, args ...interface{}) {
 	DefaultLogger.DefaultSub.Errorf(message, args...)
 }
 
+// Errorfln formats the given message and args with fmt.Sprintf, appends a newline and logs the result with the Error level
+func Errorfln(message string, args ...interface{}) {
+	DefaultLogger.DefaultSub.Errorfln(message, args...)
+}
+
 // Fatal formats the given parts with fmt.Sprint and logs the result with the Fatal level
 func Fatal(parts ...interface{}) {
 	DefaultLogger.DefaultSub.Fatal(parts...)
@@ -141,6 +161,11 @@ func Fatalln(parts ...interface{}) {
 // Fatalf formats the given message and args with fmt.Sprintf and logs the result with the Fatal level
 func Fatalf(message string, args ...interface{}) {
 	DefaultLogger.DefaultSub.Fatalf(message, args...)
+}
+
+// Fatalfln formats the given message and args with fmt.Sprintf, appends a newline and logs the result with the Fatal level
+func Fatalfln(message string, args ...interface{}) {
+	DefaultLogger.DefaultSub.Fatalfln(message, args...)
 }
 
 // Write formats the given parts with fmt.Sprint and logs the result with the Write level
