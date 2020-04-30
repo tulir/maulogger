@@ -1,161 +1,172 @@
 // mauLogger - A logger for Go programs
-// Copyright (C) 2016-2018 Tulir Asokan
+// Copyright (c) 2020 Tulir Asokan
 //
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 package maulogger
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"time"
 )
 
-// LoggerFileFormat ...
-type LoggerFileFormat func(now string, i int) string
-
 type BasicLogger struct {
-	PrintLevel         int
-	FlushLineThreshold int
-	FileTimeFormat     string
-	FileFormat         LoggerFileFormat
-	TimeFormat         string
-	FileMode           os.FileMode
-	DefaultSub         Logger
+	Sublogger
 
-	writer        *os.File
-	lines         int
-	prefixPrinted bool
+	TimeFormat  string
+	PrintLevel  int
+	FileLevel   int
+	FileMode    os.FileMode
+	FileName    string
+	MaxFiles    int
+	MaxFileSize int64
+
+	writer   io.Writer
+	file     *os.File
+	fileSize int64
 }
 
 // Logger contains advanced logging functions and also implements io.Writer
 type Logger interface {
-	Sub(module string) Logger
+	Sub(module ...string) Logger
 	WithDefaultLevel(level Level) Logger
 	GetParent() Logger
 
 	Write(p []byte) (n int, err error)
 
 	Log(level Level, parts ...interface{})
-	Logln(level Level, parts ...interface{})
 	Logf(level Level, message string, args ...interface{})
-	Logfln(level Level, message string, args ...interface{})
 
 	Debug(parts ...interface{})
-	Debugln(parts ...interface{})
 	Debugf(message string, args ...interface{})
-	Debugfln(message string, args ...interface{})
 	Info(parts ...interface{})
-	Infoln(parts ...interface{})
 	Infof(message string, args ...interface{})
-	Infofln(message string, args ...interface{})
 	Warn(parts ...interface{})
-	Warnln(parts ...interface{})
 	Warnf(message string, args ...interface{})
-	Warnfln(message string, args ...interface{})
 	Error(parts ...interface{})
-	Errorln(parts ...interface{})
 	Errorf(message string, args ...interface{})
-	Errorfln(message string, args ...interface{})
 	Fatal(parts ...interface{})
-	Fatalln(parts ...interface{})
 	Fatalf(message string, args ...interface{})
-	Fatalfln(message string, args ...interface{})
 }
 
 // Create a Logger
 func Create() Logger {
 	var log = &BasicLogger{
-		PrintLevel:         10,
-		FileTimeFormat:     "2006-01-02",
-		FileFormat:         func(now string, i int) string { return fmt.Sprintf("%[1]s-%02[2]d.log", now, i) },
-		TimeFormat:         "15:04:05 02.01.2006",
-		FileMode:           0600,
-		FlushLineThreshold: 5,
-		lines:              0,
+		PrintLevel:  LevelWarn.Severity,
+		FileLevel:   LevelInfo.Severity,
+		TimeFormat:  "15:04:05 02.01.2006",
+		FileName:    "mau.log",
+		FileMode:    0600,
+		MaxFiles:    10,
+		MaxFileSize: 10 * 1024 * 1024,
 	}
-	log.DefaultSub = log.Sub("")
+	log.Sublogger = Sublogger{
+		topLevel:     log,
+		parent:       nil,
+		Module:       "",
+		DefaultLevel: LevelDebug,
+	}
 	return log
 }
 
-func (log *BasicLogger) GetParent() Logger {
-	return nil
+func (log *BasicLogger) formatName(x int) string {
+	if x == 0 {
+		return log.FileName
+	}
+	return fmt.Sprintf("%s.%d", log.FileName, x)
 }
 
-// SetWriter formats the given parts with fmt.Sprint and logs the result with the SetWriter level
-func (log *BasicLogger) SetWriter(w *os.File) {
-	log.writer = w
+func (log *BasicLogger) rename(x int) {
+	name := log.formatName(x)
+	if _, err := os.Stat(name); os.IsNotExist(err) {
+		return
+	}
+	if x >= log.MaxFiles-1 {
+		err := os.Remove(name)
+		if err != nil {
+			log.Errorf("Failed to remove log file %s: %v", name, err)
+		}
+	} else {
+		log.rename(x + 1)
+		err := os.Rename(name, log.formatName(x+1))
+		if err != nil {
+			log.Errorf("Failed to rotate log file %s: %v", name, err)
+		}
+	}
+}
+
+func (log *BasicLogger) rotate() {
+	var buf bytes.Buffer
+	log.writer = &buf
+	err := log.file.Close()
+	if err != nil {
+		log.Error("Failed to close old log file:", err)
+	}
+	log.rename(0)
+	log.file, err = os.OpenFile(log.FileName, os.O_WRONLY|os.O_CREATE, log.FileMode)
+	if err != nil {
+		log.Error("Failed to open new log file:", err)
+	}
+	log.fileSize = 0
+	log.writer = log.file
+	n, err := buf.WriteTo(log.writer)
+	log.fileSize += n
 }
 
 // OpenFile formats the given parts with fmt.Sprint and logs the result with the OpenFile level
-func (log *BasicLogger) OpenFile() error {
-	now := time.Now().Format(log.FileTimeFormat)
-	i := 1
-	for ; ; i++ {
-		if _, err := os.Stat(log.FileFormat(now, i)); os.IsNotExist(err) {
-			break
-		} else if i == 99 {
-			i = 1
-			break
-		}
+func (log *BasicLogger) Open() error {
+	info, _ := os.Stat(log.FileName)
+	if info != nil {
+		log.fileSize = info.Size()
 	}
 	var err error
-	log.writer, err = os.OpenFile(log.FileFormat(now, i), os.O_WRONLY|os.O_CREATE|os.O_APPEND, log.FileMode)
+	log.file, err = os.OpenFile(log.FileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, log.FileMode)
 	if err != nil {
 		return err
-	} else if log.writer == nil {
+	} else if log.file == nil {
 		return os.ErrInvalid
 	}
+	log.writer = log.file
 	return nil
 }
 
 // Close formats the given parts with fmt.Sprint and logs the result with the Close level
 func (log *BasicLogger) Close() error {
-	if log.writer != nil {
-		return log.writer.Close()
+	if log.file != nil {
+		return log.file.Close()
 	}
 	return nil
 }
 
 // Raw formats the given parts with fmt.Sprint and logs the result with the Raw level
 func (log *BasicLogger) Raw(level Level, module, message string) {
-	if !log.prefixPrinted {
-		if len(module) == 0 {
-			message = fmt.Sprintf("[%s] [%s] %s", time.Now().Format(log.TimeFormat), level.Name, message)
-		} else {
-			message = fmt.Sprintf("[%s] [%s/%s] %s", time.Now().Format(log.TimeFormat), module, level.Name, message)
-		}
-	}
-
-	log.prefixPrinted = message[len(message)-1] != '\n'
-
-	if log.writer != nil {
-		_, err := log.writer.WriteString(message)
-		if err != nil {
-			fmt.Println("Failed to write to log file:", err)
-		}
+	var mod string
+	if len(module) == 0 {
+		mod = module + "/" + level.Name
+	} else {
+		mod = level.Name
 	}
 
 	if level.Severity >= log.PrintLevel {
+		var file io.Writer
 		if level.Severity >= LevelError.Severity {
-			_, _ = os.Stderr.WriteString(level.GetColor())
-			_, _ = os.Stderr.WriteString(message)
-			_, _ = os.Stderr.WriteString(level.GetReset())
+			file = os.Stderr
 		} else {
-			_, _ = os.Stdout.WriteString(level.GetColor())
-			_, _ = os.Stdout.WriteString(message)
-			_, _ = os.Stdout.WriteString(level.GetReset())
+			file = os.Stdout
+		}
+		_, _ = fmt.Fprintf(file, "%s[%s] [%s]%s %s", level.GetColor(), time.Now().Format(log.TimeFormat), mod, level.GetReset(), message)
+	}
+
+	if log.writer != nil && level.Severity >= log.FileLevel {
+		n, _ := fmt.Fprintf(log.writer, "[%s] [%s] %s", time.Now().Format(log.TimeFormat), mod, message)
+		log.fileSize += int64(n)
+		if log.fileSize > log.MaxFileSize {
+			log.rotate()
 		}
 	}
 }
