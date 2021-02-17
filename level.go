@@ -42,7 +42,7 @@ var (
 // GetColor gets the ANSI escape color code for the log level.
 func (lvl Level) GetColor() string {
 	if lvl.Color < 0 {
-		return ""
+		return "\x1b[0m"
 	}
 	return fmt.Sprintf("\x1b[%dm", lvl.Color)
 }
