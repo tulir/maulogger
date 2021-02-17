@@ -168,11 +168,6 @@ func Fatalfln(message string, args ...interface{}) {
 	DefaultLogger.DefaultSub.Fatalfln(message, args...)
 }
 
-// Write formats the given parts with fmt.Sprint and logs the result with the Write level
-func (log *BasicLogger) Write(p []byte) (n int, err error) {
-	return log.DefaultSub.Write(p)
-}
-
 // Log formats the given parts with fmt.Sprint and logs the result with the given level
 func (log *BasicLogger) Log(level Level, parts ...interface{}) {
 	log.DefaultSub.Log(level, parts...)

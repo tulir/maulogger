@@ -19,6 +19,7 @@ package maulogger
 import (
 	"fmt"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -34,18 +35,18 @@ type BasicLogger struct {
 	FileMode           os.FileMode
 	DefaultSub         Logger
 
-	writer        *os.File
-	lines         int
-	prefixPrinted bool
+	writer     *os.File
+	writerLock sync.Mutex
+	StdoutLock sync.Mutex
+	StderrLock sync.Mutex
+	lines      int
 }
 
-// Logger contains advanced logging functions and also implements io.Writer
+// Logger contains advanced logging functions
 type Logger interface {
 	Sub(module string) Logger
 	WithDefaultLevel(level Level) Logger
 	GetParent() Logger
-
-	Write(p []byte) (n int, err error)
 
 	Log(level Level, parts ...interface{})
 	Logln(level Level, parts ...interface{})
@@ -130,32 +131,40 @@ func (log *BasicLogger) Close() error {
 
 // Raw formats the given parts with fmt.Sprint and logs the result with the Raw level
 func (log *BasicLogger) Raw(level Level, module, message string) {
-	if !log.prefixPrinted {
-		if len(module) == 0 {
-			message = fmt.Sprintf("[%s] [%s] %s", time.Now().Format(log.TimeFormat), level.Name, message)
-		} else {
-			message = fmt.Sprintf("[%s] [%s/%s] %s", time.Now().Format(log.TimeFormat), module, level.Name, message)
-		}
+	if len(module) == 0 {
+		message = fmt.Sprintf("[%s] [%s] %s", time.Now().Format(log.TimeFormat), level.Name, message)
+	} else {
+		message = fmt.Sprintf("[%s] [%s/%s] %s", time.Now().Format(log.TimeFormat), module, level.Name, message)
+	}
+	if message[len(message)-1] != '\n' {
+		message += "\n"
 	}
 
-	log.prefixPrinted = message[len(message)-1] != '\n'
-
 	if log.writer != nil {
+		log.writerLock.Lock()
 		_, err := log.writer.WriteString(message)
+		log.writerLock.Unlock()
 		if err != nil {
-			fmt.Println("Failed to write to log file:", err)
+			log.StderrLock.Lock()
+			_, _ = os.Stderr.WriteString("Failed to write to log file:")
+			_, _ = os.Stderr.WriteString(err.Error())
+			log.StderrLock.Unlock()
 		}
 	}
 
 	if level.Severity >= log.PrintLevel {
 		if level.Severity >= LevelError.Severity {
+			log.StderrLock.Lock()
 			_, _ = os.Stderr.WriteString(level.GetColor())
 			_, _ = os.Stderr.WriteString(message)
 			_, _ = os.Stderr.WriteString(level.GetReset())
+			log.StderrLock.Unlock()
 		} else {
+			log.StdoutLock.Lock()
 			_, _ = os.Stdout.WriteString(level.GetColor())
 			_, _ = os.Stdout.WriteString(message)
 			_, _ = os.Stdout.WriteString(level.GetReset())
+			log.StdoutLock.Unlock()
 		}
 	}
 }
