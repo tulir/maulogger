@@ -18,6 +18,7 @@ package maulogger
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"sync"
 	"time"
@@ -47,6 +48,8 @@ type Logger interface {
 	Sub(module string) Logger
 	WithDefaultLevel(level Level) Logger
 	GetParent() Logger
+
+	Writer(level Level) io.WriteCloser
 
 	Log(level Level, parts ...interface{})
 	Logln(level Level, parts ...interface{})
