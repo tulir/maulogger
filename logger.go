@@ -17,9 +17,11 @@
 package maulogger
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -35,6 +37,12 @@ type BasicLogger struct {
 	TimeFormat         string
 	FileMode           os.FileMode
 	DefaultSub         Logger
+
+	JSONFile   bool
+	JSONStdout bool
+
+	stdoutEncoder *json.Encoder
+	fileEncoder   *json.Encoder
 
 	writer     *os.File
 	writerLock sync.Mutex
@@ -93,6 +101,11 @@ func Create() Logger {
 	return log
 }
 
+func (log *BasicLogger) EnableJSONStdout() {
+	log.JSONStdout = true
+	log.stdoutEncoder = json.NewEncoder(os.Stdout)
+}
+
 func (log *BasicLogger) GetParent() Logger {
 	return nil
 }
@@ -100,6 +113,9 @@ func (log *BasicLogger) GetParent() Logger {
 // SetWriter formats the given parts with fmt.Sprint and logs the result with the SetWriter level
 func (log *BasicLogger) SetWriter(w *os.File) {
 	log.writer = w
+	if log.JSONFile {
+		log.fileEncoder = json.NewEncoder(w)
+	}
 }
 
 // OpenFile formats the given parts with fmt.Sprint and logs the result with the OpenFile level
@@ -114,13 +130,13 @@ func (log *BasicLogger) OpenFile() error {
 			break
 		}
 	}
-	var err error
-	log.writer, err = os.OpenFile(log.FileFormat(now, i), os.O_WRONLY|os.O_CREATE|os.O_APPEND, log.FileMode)
+	writer, err := os.OpenFile(log.FileFormat(now, i), os.O_WRONLY|os.O_CREATE|os.O_APPEND, log.FileMode)
 	if err != nil {
 		return err
-	} else if log.writer == nil {
+	} else if writer == nil {
 		return os.ErrInvalid
 	}
+	log.SetWriter(writer)
 	return nil
 }
 
@@ -132,20 +148,36 @@ func (log *BasicLogger) Close() error {
 	return nil
 }
 
-// Raw formats the given parts with fmt.Sprint and logs the result with the Raw level
-func (log *BasicLogger) Raw(level Level, module, message string) {
-	if len(module) == 0 {
-		message = fmt.Sprintf("[%s] [%s] %s", time.Now().Format(log.TimeFormat), level.Name, message)
+type logLine struct {
+	log *BasicLogger
+
+	Command string    `json:"command"`
+	Time    time.Time `json:"time"`
+	Level   string    `json:"level"`
+	Module  string    `json:"module"`
+	Message string    `json:"message"`
+}
+
+func (ll logLine) String() string {
+	if len(ll.Module) == 0 {
+		return fmt.Sprintf("[%s] [%s] %s", ll.Time.Format(ll.log.TimeFormat), ll.Level, ll.Message)
 	} else {
-		message = fmt.Sprintf("[%s] [%s/%s] %s", time.Now().Format(log.TimeFormat), module, level.Name, message)
+		return fmt.Sprintf("[%s] [%s/%s] %s", ll.Time.Format(ll.log.TimeFormat), ll.Module, ll.Level, ll.Message)
 	}
-	if message[len(message)-1] != '\n' {
-		message += "\n"
-	}
+}
+
+// Raw formats the given parts with fmt.Sprint and logs the result with the Raw level
+func (log *BasicLogger) Raw(level Level, module, origMessage string) {
+	message := logLine{log, "log", time.Now(), level.Name, module, strings.TrimSpace(origMessage)}
 
 	if log.writer != nil {
 		log.writerLock.Lock()
-		_, err := log.writer.WriteString(message)
+		var err error
+		if log.JSONFile {
+			err = log.fileEncoder.Encode(&message)
+		} else {
+			_, err = log.writer.WriteString(message.String())
+		}
 		log.writerLock.Unlock()
 		if err != nil {
 			log.StderrLock.Lock()
@@ -156,17 +188,23 @@ func (log *BasicLogger) Raw(level Level, module, message string) {
 	}
 
 	if level.Severity >= log.PrintLevel {
-		if level.Severity >= LevelError.Severity {
+		if log.JSONStdout {
+			log.StdoutLock.Lock()
+			_ = log.stdoutEncoder.Encode(&message)
+			log.StdoutLock.Unlock()
+		} else if level.Severity >= LevelError.Severity {
 			log.StderrLock.Lock()
 			_, _ = os.Stderr.WriteString(level.GetColor())
-			_, _ = os.Stderr.WriteString(message)
+			_, _ = os.Stderr.WriteString(message.String())
 			_, _ = os.Stderr.WriteString(level.GetReset())
+			_, _ = os.Stderr.WriteString("\n")
 			log.StderrLock.Unlock()
 		} else {
 			log.StdoutLock.Lock()
 			_, _ = os.Stdout.WriteString(level.GetColor())
-			_, _ = os.Stdout.WriteString(message)
+			_, _ = os.Stdout.WriteString(message.String())
 			_, _ = os.Stdout.WriteString(level.GetReset())
+			_, _ = os.Stdout.WriteString("\n")
 			log.StdoutLock.Unlock()
 		}
 	}
