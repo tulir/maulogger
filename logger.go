@@ -177,6 +177,7 @@ func (log *BasicLogger) Raw(level Level, module, origMessage string) {
 			err = log.fileEncoder.Encode(&message)
 		} else {
 			_, err = log.writer.WriteString(message.String())
+			_, _ = log.writer.WriteString("\n")
 		}
 		log.writerLock.Unlock()
 		if err != nil {
