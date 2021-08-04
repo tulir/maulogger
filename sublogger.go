@@ -80,17 +80,17 @@ func (log *Sublogger) Write(p []byte) (n int, err error) {
 
 // Log formats the given parts with fmt.Sprint and logs the result with the given level
 func (log *Sublogger) Log(level Level, parts ...interface{}) {
-	log.topLevel.Raw(level, "", fmt.Sprint(parts...))
+	log.topLevel.Raw(level, log.Module, fmt.Sprint(parts...))
 }
 
 // Logln formats the given parts with fmt.Sprintln and logs the result with the given level
 func (log *Sublogger) Logln(level Level, parts ...interface{}) {
-	log.topLevel.Raw(level, "", fmt.Sprintln(parts...))
+	log.topLevel.Raw(level, log.Module, fmt.Sprintln(parts...))
 }
 
 // Logf formats the given message and args with fmt.Sprintf and logs the result with the given level
 func (log *Sublogger) Logf(level Level, message string, args ...interface{}) {
-	log.topLevel.Raw(level, "", fmt.Sprintf(message, args...))
+	log.topLevel.Raw(level, log.Module, fmt.Sprintf(message, args...))
 }
 
 // Logfln formats the given message and args with fmt.Sprintf, appends a newline and logs the result with the given level
