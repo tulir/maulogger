@@ -40,11 +40,14 @@ type BasicLogger struct {
 	StdoutLock sync.Mutex
 	StderrLock sync.Mutex
 	lines      int
+
+	metadata map[string]interface{}
 }
 
 // Logger contains advanced logging functions
 type Logger interface {
 	Sub(module string) Logger
+	Subm(module string, metadata map[string]interface{}) Logger
 	WithDefaultLevel(level Level) Logger
 	GetParent() Logger
 
@@ -78,7 +81,7 @@ type Logger interface {
 }
 
 // Create a Logger
-func Create() Logger {
+func Createm(metadata map[string]interface{}) Logger {
 	var log = &BasicLogger{
 		PrintLevel:         10,
 		FileTimeFormat:     "2006-01-02",
@@ -87,9 +90,14 @@ func Create() Logger {
 		FileMode:           0600,
 		FlushLineThreshold: 5,
 		lines:              0,
+		metadata:           metadata,
 	}
 	log.DefaultSub = log.Sub("")
 	return log
+}
+
+func Create() Logger {
+	return Createm(map[string]interface{}{})
 }
 
 func (log *BasicLogger) EnableJSONStdout() {
@@ -142,11 +150,12 @@ func (log *BasicLogger) Close() error {
 type logLine struct {
 	log *BasicLogger
 
-	Command string    `json:"command"`
-	Time    time.Time `json:"time"`
-	Level   string    `json:"level"`
-	Module  string    `json:"module"`
-	Message string    `json:"message"`
+	Command  string                 `json:"command"`
+	Time     time.Time              `json:"time"`
+	Level    string                 `json:"level"`
+	Module   string                 `json:"module"`
+	Message  string                 `json:"message"`
+	Metadata map[string]interface{} `json:"metadata"`
 }
 
 func (ll logLine) String() string {
@@ -157,9 +166,24 @@ func (ll logLine) String() string {
 	}
 }
 
+func reduceItem(m1, m2 map[string]interface{}) map[string]interface{} {
+	m3 := map[string]interface{}{}
+
+	_merge := func(m map[string]interface{}) {
+		for ia, va := range m {
+			m3[ia] = va
+		}
+	}
+
+	_merge(m1)
+	_merge(m2)
+
+	return m3
+}
+
 // Raw formats the given parts with fmt.Sprint and logs the result with the Raw level
-func (log *BasicLogger) Raw(level Level, module, origMessage string) {
-	message := logLine{log, "log", time.Now(), level.Name, module, strings.TrimSpace(origMessage)}
+func (log *BasicLogger) Raw(level Level, extraMetadata map[string]interface{}, module, origMessage string) {
+	message := logLine{log, "log", time.Now(), level.Name, module, strings.TrimSpace(origMessage), reduceItem(log.metadata, extraMetadata)}
 
 	if log.writer != nil {
 		log.writerLock.Lock()
