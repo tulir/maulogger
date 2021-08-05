@@ -35,8 +35,12 @@ func Sub(module string) Logger {
 }
 
 // Raw formats the given parts with fmt.Sprint and logs the result with the Raw level
-func Raw(level Level, metadata map[string]interface{}, module, message string) {
+func Rawm(level Level, metadata map[string]interface{}, module, message string) {
 	DefaultLogger.Raw(level, metadata, module, message)
+}
+
+func Raw(level Level, module, message string) {
+	DefaultLogger.Raw(level, map[string]interface{}{}, module, message)
 }
 
 // Log formats the given parts with fmt.Sprint and logs the result with the given level
