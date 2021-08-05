@@ -166,7 +166,7 @@ func (ll logLine) String() string {
 	}
 }
 
-func ReduceItem(m1, m2 map[string]interface{}) map[string]interface{} {
+func reduceItem(m1, m2 map[string]interface{}) map[string]interface{} {
 	m3 := map[string]interface{}{}
 
 	_merge := func(m map[string]interface{}) {
@@ -183,7 +183,7 @@ func ReduceItem(m1, m2 map[string]interface{}) map[string]interface{} {
 
 // Raw formats the given parts with fmt.Sprint and logs the result with the Raw level
 func (log *BasicLogger) Raw(level Level, extraMetadata map[string]interface{}, module, origMessage string) {
-	message := logLine{log, "log", time.Now(), level.Name, module, strings.TrimSpace(origMessage), ReduceItem(log.metadata, extraMetadata)}
+	message := logLine{log, "log", time.Now(), level.Name, module, strings.TrimSpace(origMessage), reduceItem(log.metadata, extraMetadata)}
 
 	if log.writer != nil {
 		log.writerLock.Lock()
