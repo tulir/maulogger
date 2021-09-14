@@ -124,9 +124,6 @@ func (log *BasicLogger) OpenFile() error {
 	for ; ; i++ {
 		if _, err := os.Stat(log.FileFormat(now, i)); os.IsNotExist(err) {
 			break
-		} else if i == 99 {
-			i = 1
-			break
 		}
 	}
 	writer, err := os.OpenFile(log.FileFormat(now, i), os.O_WRONLY|os.O_CREATE|os.O_APPEND, log.FileMode)
