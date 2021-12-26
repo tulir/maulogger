@@ -54,7 +54,7 @@ func (lw *LogWriter) Write(data []byte) (int, error) {
 	lw.lock.Lock()
 	newline := bytes.IndexByte(data, '\n')
 	if newline == len(data)-1 {
-		lw.writeLine(data[:1])
+		lw.writeLine(data[:len(data)-1])
 	} else if newline < 0 {
 		lw.buf.Write(data)
 	} else {
