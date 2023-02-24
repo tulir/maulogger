@@ -18,33 +18,39 @@ import (
 
 type MauZeroLog struct {
 	*zerolog.Logger
-	mod string
+	orig *zerolog.Logger
+	mod  string
 }
 
 func ZeroAsMau(log *zerolog.Logger) maulogger.Logger {
-	return MauZeroLog{log, ""}
+	return MauZeroLog{log, log, ""}
 }
 
 var _ maulogger.Logger = (*MauZeroLog)(nil)
 
 func (m MauZeroLog) Sub(module string) maulogger.Logger {
-	if m.mod != "" {
-		module = fmt.Sprintf("%s/%s", m.mod, module)
-	}
-	log := m.With().Str("module", module).Logger()
-	return MauZeroLog{&log, module}
+	return m.Subm(module, map[string]interface{}{})
 }
 
 func (m MauZeroLog) Subm(module string, metadata map[string]interface{}) maulogger.Logger {
 	if m.mod != "" {
 		module = fmt.Sprintf("%s/%s", m.mod, module)
 	}
-	with := m.With().Str("module", module)
-	for key, value := range metadata {
-		with = with.Interface(key, value)
+	var orig zerolog.Logger
+	if m.orig != nil {
+		orig = *m.orig
+	} else {
+		orig = *m.Logger
 	}
-	log := with.Logger()
-	return MauZeroLog{&log, module}
+	if len(metadata) > 0 {
+		with := m.orig.With()
+		for key, value := range metadata {
+			with = with.Interface(key, value)
+		}
+		orig = with.Logger()
+	}
+	log := orig.With().Str("module", module).Logger()
+	return MauZeroLog{&log, &orig, module}
 }
 
 func (m MauZeroLog) WithDefaultLevel(_ maulogger.Level) maulogger.Logger {
